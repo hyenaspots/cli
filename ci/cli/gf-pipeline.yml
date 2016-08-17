@@ -78,6 +78,11 @@ jobs:
       file: cli-ci/ci/cli/tasks/build-binaries.yml
     - task: build-osx
       file: cli-ci/ci/cli/tasks/build-osx-binary.yml
+  - task: sign-windows-binary
+    file: cli-ci/ci/cli/tasks/sign-windows-binary.yml
+    params:
+      SIGNTOOL_CERT_PATH: {{signtool-cert-path}}
+      SIGNTOOL_CERT_PASSWORD: {{signtool-cert-password}}
   - task: combine-binaries
     file: cli-ci/ci/cli/tasks/combine-binaries.yml
   - put: cf-cli-binaries
