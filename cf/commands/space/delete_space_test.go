@@ -89,6 +89,17 @@ var _ = Describe("delete-space command", func() {
 		Expect(config.HasSpace()).To(Equal(true))
 	})
 
+	It("deletes a space in a specified org when the -o flag is given", func() {
+		ui.Inputs = []string{"yes"}
+		runCommand("-o", "other-org", "space-to-delete")
+
+		Expect(ui.Prompts).To(ContainSubstrings([]string{"Really delete the space space-to-delete"}))
+		Expect(ui.Outputs()).To(ContainSubstrings(
+			[]string{"Deleting space", "space-to-delete", "other-org", "my-user"},
+			[]string{"OK"},
+		))
+	})
+
 	It("does not prompt when the -f flag is given", func() {
 		runCommand("-f", "space-to-delete")
 

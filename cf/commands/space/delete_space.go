@@ -28,12 +28,13 @@ func init() {
 func (cmd *DeleteSpace) MetaData() commandregistry.CommandMetadata {
 	fs := make(map[string]flags.FlagSet)
 	fs["f"] = &flags.BoolFlag{ShortName: "f", Usage: T("Force deletion without confirmation")}
+	fs["o"] = &flags.StringFlag{ShortName: "o", Usage: T("Delete space in specified org")}
 
 	return commandregistry.CommandMetadata{
 		Name:        "delete-space",
 		Description: T("Delete a space"),
 		Usage: []string{
-			T("CF_NAME delete-space SPACE [-f]"),
+			T("CF_NAME delete-space [-o ORG] SPACE [-f]"),
 		},
 		Flags: fs,
 	}
@@ -64,6 +65,11 @@ func (cmd *DeleteSpace) SetDependency(deps commandregistry.Dependency, pluginCal
 }
 func (cmd *DeleteSpace) Execute(c flags.FlagContext) error {
 	spaceName := c.Args()[0]
+	orgName := c.String("o")
+
+	if orgName == "" {
+		orgName = cmd.config.OrganizationFields().Name
+	}
 
 	if !c.Bool("f") {
 		if !cmd.ui.ConfirmDelete(T("space"), spaceName) {
@@ -74,7 +80,7 @@ func (cmd *DeleteSpace) Execute(c flags.FlagContext) error {
 	cmd.ui.Say(T("Deleting space {{.TargetSpace}} in org {{.TargetOrg}} as {{.CurrentUser}}...",
 		map[string]interface{}{
 			"TargetSpace": terminal.EntityNameColor(spaceName),
-			"TargetOrg":   terminal.EntityNameColor(cmd.config.OrganizationFields().Name),
+			"TargetOrg":   terminal.EntityNameColor(orgName),
 			"CurrentUser": terminal.EntityNameColor(cmd.config.Username()),
 		}))
 
