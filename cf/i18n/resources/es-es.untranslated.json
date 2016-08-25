@@ -24,6 +24,14 @@
     "translation": "Bind a security group to a particular space, or all existing spaces of an org"
   },
   {
+    "id": "CF_NAME delete-space [-o ORG] SPACE [-f]",
+    "translation": "CF_NAME delete-space [-o ORG] SPACE [-f]"
+  },
+  {
+    "id": "Delete space in specified org",
+    "translation": "Delete space in specified org"
+  },
+  {
     "id": "Failed to create a local temporary zip file for the buildpack",
     "translation": "Failed to create a local temporary zip file for the buildpack"
   },

@@ -3,6 +3,7 @@ package space_test
 import (
 	"errors"
 
+	"github.com/cloudfoundry/cli/cf/api/organizations/organizationsfakes"
 	"github.com/cloudfoundry/cli/cf/api/spaces/spacesfakes"
 	"github.com/cloudfoundry/cli/cf/commandregistry"
 	"github.com/cloudfoundry/cli/cf/configuration/coreconfig"
@@ -24,6 +25,7 @@ var _ = Describe("delete-space command", func() {
 		space               models.Space
 		config              coreconfig.Repository
 		spaceRepo           *spacesfakes.FakeSpaceRepository
+		orgRepo             *organizationsfakes.FakeOrganizationRepository
 		requirementsFactory *requirementsfakes.FakeFactory
 		deps                commandregistry.Dependency
 	)
@@ -42,6 +44,7 @@ var _ = Describe("delete-space command", func() {
 	BeforeEach(func() {
 		ui = &testterm.FakeUI{}
 		spaceRepo = new(spacesfakes.FakeSpaceRepository)
+		orgRepo = new(organizationsfakes.FakeOrganizationRepository)
 		config = testconfig.NewRepositoryWithDefaults()
 
 		space = models.Space{SpaceFields: models.SpaceFields{
@@ -49,12 +52,29 @@ var _ = Describe("delete-space command", func() {
 			GUID: "space-to-delete-guid",
 		}}
 
+		space_fields := make([]models.SpaceFields, 1)
+
+		space_fields[0] = models.SpaceFields{
+			Name: "space-to-delete",
+			GUID: "space-to-delete-guid",
+		}
+
+		org := models.Organization{
+			OrganizationFields: models.OrganizationFields{
+				Name: "other-org",
+				GUID: "other-org-guid"},
+			Spaces: space_fields,
+		}
+
 		requirementsFactory = new(requirementsfakes.FakeFactory)
 		requirementsFactory.NewLoginRequirementReturns(requirements.Passing{})
 		requirementsFactory.NewTargetedOrgRequirementReturns(new(requirementsfakes.FakeTargetedOrgRequirement))
 		spaceReq := new(requirementsfakes.FakeSpaceRequirement)
 		spaceReq.GetSpaceReturns(space)
+		orgReq := new(requirementsfakes.FakeOrganizationRequirement)
+		orgReq.GetOrganizationReturns(org)
 		requirementsFactory.NewSpaceRequirementReturns(spaceReq)
+		requirementsFactory.NewOrganizationRequirementReturns(orgReq)
 	})
 
 	Describe("requirements", func() {
@@ -91,6 +111,7 @@ var _ = Describe("delete-space command", func() {
 
 	It("deletes a space in a specified org when the -o flag is given", func() {
 		ui.Inputs = []string{"yes"}
+
 		runCommand("-o", "other-org", "space-to-delete")
 
 		Expect(ui.Prompts).To(ContainSubstrings([]string{"Really delete the space space-to-delete"}))
@@ -98,6 +119,14 @@ var _ = Describe("delete-space command", func() {
 			[]string{"Deleting space", "space-to-delete", "other-org", "my-user"},
 			[]string{"OK"},
 		))
+
+		// We were on this line - we wanted to figure out how to either test that the correct org
+		// guid was used in the space guid lookup call, or fake out the thing that returns
+		// a space guid to change which one it gives back depending on what org guide you call it with
+
+		Expect(spaceRepo.DeleteArgsForCall(0)).To(Equal("space-to-delete-guid"))
+		Expect(orgRepo.FindByNameCallCount()).To(Equal(1))
+		Expect(config.HasSpace()).To(Equal(true))
 	})
 
 	It("does not prompt when the -f flag is given", func() {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cloudfoundry/cli/cf"
+	"github.com/cloudfoundry/cli/cf/api/organizations"
 	"github.com/cloudfoundry/cli/cf/api/spaces"
 	"github.com/cloudfoundry/cli/cf/commandregistry"
 	"github.com/cloudfoundry/cli/cf/configuration/coreconfig"
@@ -17,7 +18,9 @@ import (
 type DeleteSpace struct {
 	ui        terminal.UI
 	config    coreconfig.ReadWriter
+	orgRepo   organizations.OrganizationRepository
 	spaceRepo spaces.SpaceRepository
+	orgReq    requirements.OrganizationRequirement
 	spaceReq  requirements.SpaceRequirement
 }
 
@@ -48,10 +51,22 @@ func (cmd *DeleteSpace) Requirements(requirementsFactory requirements.Factory, f
 
 	cmd.spaceReq = requirementsFactory.NewSpaceRequirement(fc.Args()[0])
 
+	orgName := fc.String("o")
+
+	if orgName == "" {
+		orgName = cmd.config.OrganizationFields().Name
+	}
+
+	cmd.orgReq = requirementsFactory.NewOrganizationRequirement(orgName)
+
 	reqs := []requirements.Requirement{
 		requirementsFactory.NewLoginRequirement(),
-		requirementsFactory.NewTargetedOrgRequirement(),
 		cmd.spaceReq,
+		cmd.orgReq,
+	}
+
+	if fc.String("o") == "" {
+		reqs = append(reqs, requirementsFactory.NewTargetedOrgRequirement())
 	}
 
 	return reqs, nil
@@ -61,6 +76,7 @@ func (cmd *DeleteSpace) SetDependency(deps commandregistry.Dependency, pluginCal
 	cmd.ui = deps.UI
 	cmd.config = deps.Config
 	cmd.spaceRepo = deps.RepoLocator.GetSpaceRepository()
+	cmd.orgRepo = deps.RepoLocator.GetOrganizationRepository()
 	return cmd
 }
 func (cmd *DeleteSpace) Execute(c flags.FlagContext) error {
@@ -84,9 +100,20 @@ func (cmd *DeleteSpace) Execute(c flags.FlagContext) error {
 			"CurrentUser": terminal.EntityNameColor(cmd.config.Username()),
 		}))
 
-	space := cmd.spaceReq.GetSpace()
+	//space := cmd.spaceReq.GetSpace()
+	//var err error = nil
 
-	err := cmd.spaceRepo.Delete(space.GUID)
+	//if c.String("o") != "" {
+	org := cmd.orgReq.GetOrganization()
+
+	space, err := cmd.spaceRepo.FindByNameInOrg(spaceName, org.GUID)
+	if err != nil {
+		return err
+	}
+
+	//	}
+
+	err = cmd.spaceRepo.Delete(space.GUID)
 	if err != nil {
 		return err
 	}

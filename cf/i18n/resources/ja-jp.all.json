@@ -620,8 +620,8 @@
     "translation": "CF_NAME delete-shared-domain DOMAIN [-f]"
   },
   {
-    "id": "CF_NAME delete-space SPACE [-f]",
-    "translation": "CF_NAME delete-space SPACE [-f]"
+    "id": "CF_NAME delete-space [-o ORG] SPACE [-f]",
+    "translation": ""
   },
   {
     "id": "CF_NAME delete-space-quota SPACE-QUOTA-NAME [-f]",
@@ -1458,6 +1458,10 @@
   {
     "id": "Delete cancelled",
     "translation": "削除が取り消されました"
+  },
+  {
+    "id": "Delete space in specified org",
+    "translation": ""
   },
   {
     "id": "Deletes a security group",
